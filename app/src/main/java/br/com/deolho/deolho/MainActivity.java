@@ -1,6 +1,8 @@
 package br.com.deolho.deolho;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -9,6 +11,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,12 +19,24 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.json.JSONObject;
-
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.Charset;
 
 import br.com.deolho.listagem.CustomList;
+import br.com.deolho.listagem.WebServiceConsumer;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -83,32 +98,40 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        getDespesas();
+
+        new WebServiceConsumer().execute();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    public void getDespesas(){
+    public String readJSONFeed(String URL) {
+        StringBuilder stringBuilder = new StringBuilder();
+        HttpClient httpClient = new DefaultHttpClient();
+        HttpGet httpGet = new HttpGet(URL);
         try {
-//            String sURL = "http://localhost:8080/DespesasParlamentaresWS/resources/email";
-//
-//            URL url = new URL(sURL);
-//            HttpURLConnection request = (HttpURLConnection) url.openConnection();
-//            request.connect();
-//
-//            // Convert to a JSON object to print data
-//            JsonParser jp = new JsonParser(); //from gson
-//            JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent())); //Convert the input stream to a json element
-//            JsonObject rootobj = root.getAsJsonObject(); //May be an array, may be an object.
-//            zipcode = rootobj.get("zip_code").getAsString(); //just grab the zipcode
-
-            JSONObject json = new JSONObject(IOUtils.toString(new URL("https://graph.facebook.com/me"), Charset.forName("UTF-8")));
-
+            HttpResponse response = httpClient.execute(httpGet);
+            StatusLine statusLine = response.getStatusLine();
+            int statusCode = statusLine.getStatusCode();
+            if (statusCode == 200) {
+                HttpEntity entity = response.getEntity();
+                InputStream inputStream = entity.getContent();
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(inputStream));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("teste");
+                }
+                inputStream.close();
+            } else {
+                Log.d("JSON", "Failed to download file");
+            }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("erro = " + e.getMessage());
         }
+        return stringBuilder.toString();
     }
+
 
     @Override
     public void onBackPressed() {
@@ -119,6 +142,7 @@ public class MainActivity extends AppCompatActivity
             super.onBackPressed();
         }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

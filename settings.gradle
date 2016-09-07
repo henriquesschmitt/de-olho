@@ -1,1 +1,1 @@
-include ':app', ':commons-io-2.5'
+include ':app', ':commons-io-2.5', ':json-simple', ':gson-2.2.2', ':apache-httpcomponents-httpcore', ':httpclient-4.0.3'

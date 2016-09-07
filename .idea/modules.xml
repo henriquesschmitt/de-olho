@@ -3,8 +3,12 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DeOlho.iml" filepath="$PROJECT_DIR$/DeOlho.iml" />
+      <module fileurl="file://$PROJECT_DIR$/apache-httpcomponents-httpcore/apache-httpcomponents-httpcore.iml" filepath="$PROJECT_DIR$/apache-httpcomponents-httpcore/apache-httpcomponents-httpcore.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/commons-io-2.5/commons-io-2.5.iml" filepath="$PROJECT_DIR$/commons-io-2.5/commons-io-2.5.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gson-2.2.2/gson-2.2.2.iml" filepath="$PROJECT_DIR$/gson-2.2.2/gson-2.2.2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/httpclient-4.0.3/httpclient-4.0.3.iml" filepath="$PROJECT_DIR$/httpclient-4.0.3/httpclient-4.0.3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/json-simple/json-simple.iml" filepath="$PROJECT_DIR$/json-simple/json-simple.iml" />
     </modules>
   </component>
 </project>
