@@ -1,4 +1,4 @@
-package br.com.deolho.listagem;
+package br.com.deolho.ws;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -17,23 +17,23 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.text.Format;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import br.com.deolho.br.com.modelo.Despesa;
+import br.com.deolho.modelo.Despesa;
 
 /**
  * Created by Henrique on 01/09/2016.
  */
-public class WebServiceConsumer extends AsyncTask<String, Void, Boolean> {
+public class WebServiceConsumer extends AsyncTask<String, Void, List<Despesa>> {
 
     @Override
-    protected Boolean doInBackground(String... params) {
+    protected List<Despesa> doInBackground(String... params) {
 
         HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet("http://10.0.0.2:8080/DespesasParlamentaresWS/resources/email");
+        HttpGet httpGet = new HttpGet("http://104.236.29.250:8080/DespesasParlamentaresWS/resources/usuario?idusuario=1");
+        List<Despesa> listaDespesas = new ArrayList<>();
+
         try {
             HttpResponse response = httpClient.execute(httpGet);
             StatusLine statusLine = response.getStatusLine();
@@ -50,7 +50,7 @@ public class WebServiceConsumer extends AsyncTask<String, Void, Boolean> {
                     stringBuilder1.append(line);
                 }
 
-                List<Despesa> listaDespesas = retornaListaDespesas(stringBuilder1.toString());
+                listaDespesas = retornaListaDespesas(stringBuilder1.toString());
                 System.out.println("LISTA DO CARALEO DE DESPESAS = " + listaDespesas.size());
 
                 inputStream.close();
@@ -59,7 +59,8 @@ public class WebServiceConsumer extends AsyncTask<String, Void, Boolean> {
             }
         } catch (Exception e) {
             System.out.println("erro = " + e.getMessage());
-        } return true;
+        }
+        return listaDespesas;
     }
 
     /** PROCESSA OS DADOS LIDOS DO JSON E CRIA OBJETOS DESPESA QUE SERÃO EXIBIDOS NO APP **/

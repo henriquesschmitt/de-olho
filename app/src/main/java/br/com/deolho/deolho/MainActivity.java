@@ -1,8 +1,7 @@
 package br.com.deolho.deolho;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -16,7 +15,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
@@ -25,41 +26,36 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import br.com.deolho.listagem.CustomList;
-import br.com.deolho.listagem.WebServiceConsumer;
+import br.com.deolho.modelo.Despesa;
+import br.com.deolho.modelo.Parlamentar;
+import br.com.deolho.ws.CustomList;
+import br.com.deolho.ws.DespesasParlamentaresWS;
+import br.com.deolho.ws.WebServiceConsumer;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    public static ProgressDialog pd;
+    public static List<Parlamentar> listaDadosParlamentares = null;
+    Spinner sParlamentares;
+    List<String> spinnerParlamentaresArray =  new ArrayList<String>();
+    List<Despesa> despesaList = new ArrayList<>();
+
     ListView list;
-    String[] web = {
-            "Fornecedor: H PLUS ADMINISTRAÇÃO E HOTELARIA LTDA - SCP ATHOS BULCÃO sda sad sad sad ad asd asdas das",
-            "Fornecedor: TRANSCONTINENTAL AGÊNCIA DE VIAGENS LTDA",
-            "Fornecedor: HRPP SERVIÇO DE PRODUÇÃO E IMP. DE MATERIAIS LTDA-ME",
-            "Fornecedor: TRANSCONTINENTAL AGÊNCIA DE VIAGENS LTDA",
-            "Fornecedor: TRANSCONTINENTAL AGÊNCIA DE VIAGENS LTDA",
-            "Fornecedor: TRANSCONTINENTAL AGÊNCIA DE VIAGENS LTDA",
-            "Fornecedor: TRANSCONTINENTAL AGÊNCIA DE VIAGENS LTDA"
-    };
-    Integer[] imageId = {
-            R.drawable.ladrao1,
-            R.drawable.ladrao1,
-            R.drawable.ladrao1,
-            R.drawable.ladrao1,
-            R.drawable.anaamelialemos,
-            R.drawable.ladrao1,
-            R.drawable.anaamelialemos
-    };
+
+    public String[] listViewDescription = new String[1000];
+    public int[] listViewImage = new int[1000];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +79,102 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        //CONFIGURAÇÃO DO LIST VIEW
+        /** TRAZ DADOS DE PARLAMENTARES **/
+        pd = ProgressDialog.show(MainActivity.this, "Aguarde", "Atualizando dados de parlamentares");
+        //start a new thread to process job
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getDadosParlamentares("http://meucongressonacional.com/api/001/senador", 0);
+            }
+        }).start();
+
+        //start a new thread to process job
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getDadosParlamentares("http://meucongressonacional.com/api/001/deputado", 1);
+            }
+        }).start();
+
+        //----------------------
+
+        spinnerParlamentaresArray.add("Selecione um parlamentar");
+        ArrayAdapter<String> adapterParlamentar = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, spinnerParlamentaresArray);
+        adapterParlamentar.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sParlamentares = (Spinner) findViewById(R.id.spinnerParlamentar);
+        sParlamentares.setAdapter(adapterParlamentar);
+
+        final DespesasParlamentaresWS despesasParlamentaresWS = new DespesasParlamentaresWS();
+
+        /** AÇÃO DE SELEÇÃO DE PARLAMENTAR NO SPINNER **/
+        sParlamentares.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+
+                if(position != 0) {
+
+                    String nomeParlamentar = sParlamentares.getSelectedItem().toString();
+                    String[] nomesParseados = nomeParlamentar.split(" ");
+                    final StringBuilder nomeParaConsulta = new StringBuilder();
+                    for	(int i=0; i<nomesParseados.length;i++){
+                        nomeParaConsulta.append(nomesParseados[i]).append("%20");
+                    }
+
+                    pd = ProgressDialog.show(MainActivity.this, "Aguarde", "Pesquisando despesas do parlamentar...");
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            /** FAZ A REQUISIÇÃO DOS DADOS DO PARLAMENTAR SELECIONADO **/
+                            despesaList = despesasParlamentaresWS.getDespesaParlamentares("http://104.236.29.250:8080/DespesasParlamentaresWS/resources/despesa/byname?nome=" + nomeParaConsulta.toString());
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    String[] descricaoDespesa = new String[despesaList.size()];
+                                    String[] valorDespesa = new String[despesaList.size()];
+                                    int[] posicaoImagemParlamentar = new int[despesaList.size()];
+                                    for (int i=0;i<despesaList.size();i++){
+                                        descricaoDespesa[i] = despesaList.get(i).getDescricaoDespesa();
+                                        valorDespesa [i] = "Valor: R$" + String.valueOf(despesaList.get(i).getValor());
+                                        posicaoImagemParlamentar[i] = 0;
+                                    }
+                                    configuracaoListView(descricaoDespesa, valorDespesa, posicaoImagemParlamentar);
+                                }
+                            });
+
+
+                        }
+                    }).start();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // your code here
+            }
+
+        });
+
+        String[] descricaoDespesa = new String[despesaList.size()];
+        String[] valorDespesa = new String[despesaList.size()];
+        int[] posicaoImagemParlamentar = new int[despesaList.size()];
+        for (int i=0;i<despesaList.size();i++){
+            descricaoDespesa[i] = String.valueOf(i);
+            valorDespesa [i] = "Valor: R$" + String.valueOf(despesaList.get(i).getValor());
+            posicaoImagemParlamentar[i] = 0;
+        }
+        configuracaoListView(descricaoDespesa, valorDespesa, posicaoImagemParlamentar);
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    public void configuracaoListView(String[] abc, String[] valor, int[] def){
         CustomList adapter = new
-                CustomList(MainActivity.this, web, imageId);
+                CustomList(MainActivity.this, abc, valor, def);
         list = (ListView) findViewById(R.id.list);
         list.setAdapter(adapter);
 
@@ -94,44 +183,103 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
-                Toast.makeText(MainActivity.this, "You Clicked at " + web[+position], Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "You Clicked at " + listViewDescription[+position], Toast.LENGTH_SHORT).show();
             }
         });
 
-
-        new WebServiceConsumer().execute();
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    public String readJSONFeed(String URL) {
-        StringBuilder stringBuilder = new StringBuilder();
-        HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet(URL);
+        List<Despesa> listaDespesas = null;
         try {
-            HttpResponse response = httpClient.execute(httpGet);
-            StatusLine statusLine = response.getStatusLine();
-            int statusCode = statusLine.getStatusCode();
-            if (statusCode == 200) {
-                HttpEntity entity = response.getEntity();
-                InputStream inputStream = entity.getContent();
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(inputStream));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println("teste");
-                }
-                inputStream.close();
-            } else {
-                Log.d("JSON", "Failed to download file");
-            }
-        } catch (Exception e) {
-            System.out.println("erro = " + e.getMessage());
+            listaDespesas = new WebServiceConsumer().execute().get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
-        return stringBuilder.toString();
+        list.setEmptyView(findViewById(R.id.emptyElement));
     }
 
+    public void getDadosParlamentares(final String url, final int index){
+
+        try {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        HttpClient httpClient = new DefaultHttpClient();
+                        HttpGet httpGet = new HttpGet(url);
+                        List<Parlamentar> listaDadosParlamentares = new ArrayList<>();
+
+                        try {
+                            HttpResponse response = httpClient.execute(httpGet);
+                            StatusLine statusLine = response.getStatusLine();
+                            int statusCode = statusLine.getStatusCode();
+                            String line = null;
+                            StringBuilder stringBuilder1 = new StringBuilder();
+
+                            if (statusCode == 200) {
+                                HttpEntity entity = response.getEntity();
+                                InputStream inputStream = entity.getContent();
+                                BufferedReader reader = new BufferedReader(
+                                        new InputStreamReader(inputStream));
+
+                                while ((line = reader.readLine()) != null) {
+                                    stringBuilder1.append(line);
+                                }
+
+                                listaDadosParlamentares = retornaListaDadosParlamentares(stringBuilder1.toString(), index);
+
+                                inputStream.close();
+
+                            } else {
+                                Log.d("JSON", "Failed to download file");
+                            }
+
+                        } catch (Exception e) {
+                            System.out.println("erro = " + e.getMessage());
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start(); // spawn thread
+            t.join();  // wait for thread to finish
+
+        } catch (Exception e) {
+            System.out.println("TRETA NA THREAD");
+        }
+    }
+
+    public List<Parlamentar> retornaListaDadosParlamentares(String jsonLido, int index){
+
+        List<Parlamentar> listaDados = new ArrayList<>();
+
+        try {
+            JSONArray jsonarray = new JSONArray(jsonLido);
+            for (int i = 0; i < jsonarray.length(); i++) {
+                JSONObject jsonobject = jsonarray.getJSONObject(i);
+
+                String codigo = jsonobject.getString("id");
+                String nome =  jsonobject.getString("nomeCompleto");
+                String sexo = jsonobject.getString("sexo");
+                String cargo = jsonobject.getString("cargo");
+                String urlFoto = jsonobject.getString("fotoURL");
+                String partido = jsonobject.getString("partido");
+                String gastoTotal = jsonobject.getString("gastoTotal");
+                String gastoDia = jsonobject.getString("gastoPorDia");
+
+                Parlamentar parlamentar = new Parlamentar(codigo, nome, sexo, cargo, urlFoto, partido, gastoTotal, gastoDia);
+                spinnerParlamentaresArray.add(parlamentar.getNome());
+                listaDados.add(parlamentar);
+            }
+            if(index == 1)
+                pd.dismiss();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     @Override
     public void onBackPressed() {

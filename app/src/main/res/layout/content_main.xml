@@ -12,11 +12,34 @@
     tools:context="br.com.deolho.deolho.MainActivity"
     tools:showIn="@layout/app_bar_main">
 
+    <Spinner
+        android:id="@+id/spinnerParlamentar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="5dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:spinnerMode="dropdown"
+        android:layout_alignParentTop="true"
+        android:layout_alignRight="@+id/list"
+        android:layout_alignEnd="@+id/list" />
+
     <ListView
         android:id="@+id/list"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:dividerHeight="0.2px">
+        android:dividerHeight="0.2px"
+        android:layout_below="@+id/spinnerParlamentar">
     </ListView>
+
+    <TextView
+        android:id="@+id/emptyElement"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="NÃO HÁ DESPESAS LISTADAS!"
+        android:textColor="#525252"
+        android:textSize="19.0sp"
+        android:visibility="gone" />
 
 </RelativeLayout>

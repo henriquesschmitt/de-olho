@@ -1,7 +1,6 @@
-package br.com.deolho.br.com.modelo;
+package br.com.deolho.modelo;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 
 public class Despesa {
     

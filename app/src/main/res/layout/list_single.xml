@@ -21,43 +21,27 @@
 
     </LinearLayout>
 
-    <!-- Title Of Song-->
     <TextView
-        android:id="@+id/txt"
+        android:id="@+id/descricaoDespesa"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/thumbnail"
         android:layout_toRightOf="@+id/thumbnail"
-        android:text="Rihanna Love the way lie"
+        android:text="Não informada"
         android:textColor="#040404"
         android:typeface="sans"
         android:textSize="15dip"
         android:textStyle="bold"/>
 
-    <!-- Artist Name -->
     <TextView
-        android:id="@+id/artist"
+        android:id="@+id/valorDespesa"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/txt"
+        android:layout_below="@id/descricaoDespesa"
         android:textColor="#343434"
-        android:textSize="10dip"
+        android:textSize="15dip"
         android:layout_marginTop="1dip"
         android:layout_toRightOf="@+id/thumbnail"
-        android:text="Just gona stand there and ..." />
-
-    <!--&lt;!&ndash; Rightend Duration &ndash;&gt;-->
-    <!--<TextView-->
-        <!--android:id="@+id/duration"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_alignParentRight="true"-->
-        <!--android:layout_alignTop="@id/txt"-->
-        <!--android:gravity="right"-->
-        <!--android:text="5:45"-->
-        <!--android:layout_marginRight="5dip"-->
-        <!--android:textSize="10dip"-->
-        <!--android:textColor="#10bcc9"-->
-        <!--android:textStyle="bold"/>-->
+        android:text="Não informado" />
 
 </RelativeLayout>
