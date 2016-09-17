@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.deolho.deolho.MainActivity;
 import br.com.deolho.modelo.Despesa;
 
 /**
@@ -31,7 +32,7 @@ public class WebServiceConsumer extends AsyncTask<String, Void, List<Despesa>> {
     protected List<Despesa> doInBackground(String... params) {
 
         HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet("http://104.236.29.250:8080/DespesasParlamentaresWS/resources/usuario?idusuario=1");
+        HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario?idusuario=1");
         List<Despesa> listaDespesas = new ArrayList<>();
 
         try {
@@ -72,8 +73,6 @@ public class WebServiceConsumer extends AsyncTask<String, Void, List<Despesa>> {
             JSONArray jsonarray = new JSONArray(jsonLido);
             for (int i = 0; i < jsonarray.length(); i++) {
                 JSONObject jsonobject = jsonarray.getJSONObject(i);
-
-                System.out.println("LENDO A LISTA!!");
 
                 String ano = jsonobject.has("ano") ? jsonobject.getString("ano") : "2016";
                 String mes = jsonobject.has("mes") ? jsonobject.getString("mes") : "01";

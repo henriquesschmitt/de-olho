@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import br.com.deolho.deolho.MainActivity;
+
 /**
  * Created by Henrique on 01/09/2016.
  */
@@ -23,7 +25,7 @@ public class UsuarioVerifyWS extends AsyncTask<String, Void, Boolean> {
     protected Boolean doInBackground(String... params) {
 
         HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet("http://104.236.29.250:8080/DespesasParlamentaresWS/resources/usuario/verify?email=" + params[0] +
+        HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario/verify?email=" + params[0] +
             "&senha=" + params[1]);
         try {
             HttpResponse response = httpClient.execute(httpGet);

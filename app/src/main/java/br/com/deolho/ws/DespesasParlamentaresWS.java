@@ -30,6 +30,7 @@ import br.com.deolho.modelo.Parlamentar;
 public class DespesasParlamentaresWS {
 
     public static List<Despesa> listaDadosParlamentares = new ArrayList<>();
+    public static String fotoParlamentar = null;
 
     public List<Despesa> getDespesaParlamentares(final String url){
 
@@ -118,5 +119,78 @@ public class DespesasParlamentaresWS {
             e.printStackTrace();
         }
         return listaDespesas;
+    }
+
+    public void getFoto(final String url){
+
+        try {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        HttpClient httpClient = new DefaultHttpClient();
+                        HttpGet httpGet = new HttpGet(url);
+
+                        try {
+                            HttpResponse response = httpClient.execute(httpGet);
+                            StatusLine statusLine = response.getStatusLine();
+                            int statusCode = statusLine.getStatusCode();
+                            String line = null;
+                            StringBuilder stringBuilder1 = new StringBuilder();
+
+                            if (statusCode == 200) {
+                                HttpEntity entity = response.getEntity();
+                                InputStream inputStream = entity.getContent();
+                                BufferedReader reader = new BufferedReader(
+                                        new InputStreamReader(inputStream));
+
+                                while ((line = reader.readLine()) != null) {
+                                    stringBuilder1.append(line);
+                                }
+
+                                System.out.println("AQUI = " + url);
+                                fotoParlamentar = retornaFoto(stringBuilder1.toString());
+
+                                //FECHA O PROGRESS DIALOG ABERTO
+                                MainActivity.pd.dismiss();
+
+                                inputStream.close();
+
+                            } else {
+                                Log.d("JSON", "Failed to download file");
+                            }
+
+                        } catch (Exception e) {
+                            System.out.println("erro = " + e.getMessage());
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+            t.join();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** PROCESSA OS DADOS LIDOS DO JSON E CRIA OBJETOS DESPESA QUE SERÃO EXIBIDOS NO APP **/
+    public String retornaFoto(String jsonLido){
+
+        try {
+            JSONArray jsonarray = new JSONArray(jsonLido);
+            for (int i = 0; i < jsonarray.length(); i++) {
+                JSONObject jsonobject = jsonarray.getJSONObject(i);
+
+                String urlFoto = jsonobject.has("urlFoto") ? jsonobject.getString("urlFoto") : "";
+
+                return urlFoto;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

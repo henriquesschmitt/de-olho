@@ -1,7 +1,9 @@
 package br.com.deolho.deolho;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -18,7 +20,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -35,11 +36,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
 import br.com.deolho.modelo.Despesa;
 import br.com.deolho.modelo.Parlamentar;
-import br.com.deolho.ws.CustomList;
+import br.com.deolho.util.CustomList;
 import br.com.deolho.ws.DespesasParlamentaresWS;
 import br.com.deolho.ws.WebServiceConsumer;
 
@@ -57,12 +60,18 @@ public class MainActivity extends AppCompatActivity
     public String[] listViewDescription = new String[1000];
     public int[] listViewImage = new int[1000];
 
+    public static Despesa despesaSelecionada = null;
+
+    public static String IP_SERVIDOR = "10.0.0.108:8080";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitNetwork().build());
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -128,7 +137,7 @@ public class MainActivity extends AppCompatActivity
                         public void run() {
 
                             /** FAZ A REQUISIÇÃO DOS DADOS DO PARLAMENTAR SELECIONADO **/
-                            despesaList = despesasParlamentaresWS.getDespesaParlamentares("http://104.236.29.250:8080/DespesasParlamentaresWS/resources/despesa/byname?nome=" + nomeParaConsulta.toString());
+                            despesaList = despesasParlamentaresWS.getDespesaParlamentares("http://"+IP_SERVIDOR+"/DespesasParlamentaresWS/resources/despesa/byname?nome=" + nomeParaConsulta.toString());
 
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -183,7 +192,9 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
-                Toast.makeText(MainActivity.this, "You Clicked at " + listViewDescription[+position], Toast.LENGTH_SHORT).show();
+            /** SETA VALORES QUE SERÃO EXIBIDOS NA TELA DE DETALHES DA DESPESA **/
+            despesaSelecionada = despesaList.get(position);
+            redirectToDetailBand();
             }
         });
 
@@ -198,6 +209,20 @@ public class MainActivity extends AppCompatActivity
         list.setEmptyView(findViewById(R.id.emptyElement));
     }
 
+    public void redirectToDetailBand(){
+        int timeout = 0;
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+//                finish();
+                Intent homepage = new Intent(MainActivity.this, DetalheDespesaActivity.class);
+                startActivity(homepage);
+            }
+        }, timeout);
+    }
+
     public void getDadosParlamentares(final String url, final int index){
 
         try {
@@ -207,7 +232,6 @@ public class MainActivity extends AppCompatActivity
                     try {
                         HttpClient httpClient = new DefaultHttpClient();
                         HttpGet httpGet = new HttpGet(url);
-                        List<Parlamentar> listaDadosParlamentares = new ArrayList<>();
 
                         try {
                             HttpResponse response = httpClient.execute(httpGet);
@@ -226,7 +250,10 @@ public class MainActivity extends AppCompatActivity
                                     stringBuilder1.append(line);
                                 }
 
-                                listaDadosParlamentares = retornaListaDadosParlamentares(stringBuilder1.toString(), index);
+                                List<Parlamentar> listaTemp = retornaListaDadosParlamentares(stringBuilder1.toString(), index);
+                                for (Parlamentar parlamentar : listaTemp) {
+                                    listaDadosParlamentares.add(parlamentar);
+                                }
 
                                 inputStream.close();
 
@@ -272,13 +299,14 @@ public class MainActivity extends AppCompatActivity
                 Parlamentar parlamentar = new Parlamentar(codigo, nome, sexo, cargo, urlFoto, partido, gastoTotal, gastoDia);
                 spinnerParlamentaresArray.add(parlamentar.getNome());
                 listaDados.add(parlamentar);
+
             }
             if(index == 1)
                 pd.dismiss();
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        return null;
+        return listaDados;
     }
 
     @Override
