@@ -81,9 +81,9 @@ public class DetalheDespesaActivity extends AppCompatActivity {
             System.out.println(e.getMessage());
         }
 
-        System.out.println("URL DA FOTO = " + DespesasParlamentaresWS.fotoParlamentar);
-        new DownloadImageTask((ImageView) findViewById(R.id.fotoParlamentar))
-                .execute(DespesasParlamentaresWS.fotoParlamentar);
+        if (DespesasParlamentaresWS.fotoParlamentar != null && !DespesasParlamentaresWS.fotoParlamentar.equals(""))
+            new DownloadImageTask((ImageView) findViewById(R.id.fotoParlamentar))
+                    .execute(DespesasParlamentaresWS.fotoParlamentar);
 
     }
 

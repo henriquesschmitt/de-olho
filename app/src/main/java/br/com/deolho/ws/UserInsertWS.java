@@ -1,6 +1,5 @@
 package br.com.deolho.ws;
 
-import android.os.AsyncTask;
 import android.util.Log;
 
 import org.apache.http.HttpEntity;
@@ -17,16 +16,15 @@ import java.io.InputStreamReader;
 import br.com.deolho.deolho.MainActivity;
 
 /**
- * Created by Henrique on 01/09/2016.
+ * Created by dell on 17/09/2016.
  */
-public class UsuarioInsertWS extends AsyncTask<String, Void, Boolean> {
+public class UserInsertWS {
 
-    @Override
-    protected Boolean doInBackground(String... params) {
+    public boolean inserirUsuario(String email, String senha){
 
         HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario/insert?email=" + params[0] +
-            "&senha=" + params[1]);
+        HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario/insert?email=" + email +
+                "&senha=" + senha);
         try {
             HttpResponse response = httpClient.execute(httpGet);
             StatusLine statusLine = response.getStatusLine();

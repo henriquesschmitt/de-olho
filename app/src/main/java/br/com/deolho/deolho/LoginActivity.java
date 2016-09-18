@@ -14,41 +14,35 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Filter;
 
-import br.com.deolho.ws.UsuarioVerifyWS;
-
-/**
- * A login screen that offers login via email/password.
- */
 public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
 
-    /**
-     * Id to identity READ_CONTACTS permission request.
-     */
     private static final int REQUEST_READ_CONTACTS = 0;
 
-    /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
     private static final String[] DUMMY_CREDENTIALS = new String[]{
             "foo@example.com:hello", "bar@example.com:world"
     };
-    /**
-     * Keep track of the login task to ensure we can cancel it if requested.
-     */
     private UserLoginTask mAuthTask = null;
 
     // UI references.
@@ -58,31 +52,25 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private View mLoginFormView;
 
     private ProgressDialog pd;
+    Button mEmailSignInButton;
+    Button mButtonAccountRegister;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        // Set up the login form.
-        mEmailView = (EditText) findViewById(R.id.email);
 
+        mButtonAccountRegister = (Button) findViewById(R.id.buttonRegister);
+        mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+
+        mEmailView = (EditText) findViewById(R.id.email);
         mPasswordView = (EditText) findViewById(R.id.password);
-//        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-//            @Override
-//            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-//                if (id == R.id.login || id == EditorInfo.IME_NULL) {
-//                    attemptLogin();
-//                    return true;
-//                }
-//                return false;
-//            }
-//        });
 
         //teste
         mEmailView.setText("henriquesschmitt@gmail.com");
         mPasswordView.setText("123");
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -91,7 +79,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         });
 
         /** AÇÃO DO BOTÃO REGISTRAR CONTA **/
-        Button mButtonAccountRegister = (Button) findViewById(R.id.buttonRegister);
         mButtonAccountRegister.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -100,42 +87,65 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         });
 
         mLoginFormView = findViewById(R.id.login_form);
-//        mProgressView = findViewById(R.id.login_progress);
     }
 
-    public void verificarUsuario(final String usuario, final String senha){
+    public void verificarUsuario(final String email, final String senha){
 
-        pd = ProgressDialog.show(this, "Aguarde",
-                "Validando usuário...", true);
+        try {
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                UsuarioVerifyWS usuarioVerifyWS = new UsuarioVerifyWS();
-                try {
-                    Boolean a = usuarioVerifyWS.execute(usuario, senha).get();
-                    if(a) {
-                        pd.dismiss();
-                        redirectToMainActivityView();
-                    }
-                    else {
-                        pd.dismiss();
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Usuário e/ou senha inválidos", Toast.LENGTH_LONG).show();
+                    HttpClient httpClient = new DefaultHttpClient();
+                    HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario/verify?email=" + email +
+                            "&senha=" + senha);
+                    try {
+                        HttpResponse response = httpClient.execute(httpGet);
+                        StatusLine statusLine = response.getStatusLine();
+                        int statusCode = statusLine.getStatusCode();
+                        String line = null;
+                        StringBuilder stringBuilder1 = new StringBuilder();
+
+                        if (statusCode == 200) {
+                            HttpEntity entity = response.getEntity();
+                            InputStream inputStream = entity.getContent();
+                            BufferedReader reader = new BufferedReader(
+                                    new InputStreamReader(inputStream));
+
+                            while ((line = reader.readLine()) != null) {
+                                stringBuilder1.append(line);
                             }
-                        });
-                        this.finalize();
+
+                            System.out.println("henrique - " + stringBuilder1.toString().equals("[]"));
+                            if(stringBuilder1.toString().equals("[]")) {
+                                pd.dismiss();
+                                runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(), "Usuário e/ou senha inválidos", Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                            } else {
+                                pd.dismiss();
+                                redirectToMainActivityView();
+                            }
+
+                            inputStream.close();
+
+                        } else {
+                            Log.d("JSON", "Failed to download file");
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println("erro = " + e.getMessage());
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (Throwable throwable) {
-                    throwable.printStackTrace();
                 }
-            }
-        }).start();
+            });
+            t.start();
+            t.join();
+
+        } catch (Exception e) {
+            System.out.println("TRETA NA THREAD");
+        }
     }
 
     public void redirectToMainActivityView(){
@@ -213,9 +223,18 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
 //            showProgress(true);
-            mAuthTask = new UserLoginTask(email, password);
-            mAuthTask.execute((Void) null);
-            verificarUsuario(mEmailView.getText().toString(), mPasswordView.getText().toString());
+//            mAuthTask = new UserLoginTask(email, password);
+//            mAuthTask.execute((Void) null);
+
+            /** TRAZ DADOS DE PARLAMENTARES **/
+            pd = ProgressDialog.show(LoginActivity.this, "Aguarde", "Verificando usuário...");
+            //start a new thread to process job
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    verificarUsuario(mEmailView.getText().toString(), mPasswordView.getText().toString());
+                }
+            }).start();
         }
     }
 

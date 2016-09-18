@@ -16,10 +16,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,17 +36,19 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
 import br.com.deolho.modelo.Despesa;
 import br.com.deolho.modelo.Parlamentar;
 import br.com.deolho.util.CustomList;
 import br.com.deolho.ws.DespesasParlamentaresWS;
-import br.com.deolho.ws.WebServiceConsumer;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -59,10 +63,13 @@ public class MainActivity extends AppCompatActivity
 
     public String[] listViewDescription = new String[1000];
     public int[] listViewImage = new int[1000];
+    FloatingActionButton fab;
 
     public static Despesa despesaSelecionada = null;
 
-    public static String IP_SERVIDOR = "10.0.0.108:8080";
+    public static String IP_SERVIDOR = "10.0.0.101:8080";
+
+    public static BigDecimal valTotalDespesas = new BigDecimal(BigDecimal.ROUND_UP);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,14 +80,7 @@ public class MainActivity extends AppCompatActivity
 
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitNetwork().build());
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        fab = (FloatingActionButton) findViewById(R.id.fab);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -90,23 +90,44 @@ public class MainActivity extends AppCompatActivity
 
         /** TRAZ DADOS DE PARLAMENTARES **/
         pd = ProgressDialog.show(MainActivity.this, "Aguarde", "Atualizando dados de parlamentares");
-        //start a new thread to process job
+
         new Thread(new Runnable() {
             @Override
             public void run() {
-                getDadosParlamentares("http://meucongressonacional.com/api/001/senador", 0);
+                try {
+                    Thread t1 = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            getDadosParlamentares("http://meucongressonacional.com/api/001/senador", 0);
+                        }
+                    });
+                    t1.start();
+                    t1.join();
+
+                    //start a new thread to process job
+                    Thread t2 = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            getDadosParlamentares("http://meucongressonacional.com/api/001/deputado", 1);
+                        }
+                    });
+                    t2.start();
+                    t2.join();
+
+//            /**
+//             * Ordenar o array list
+//             * **/
+//            Collections.sort (listaDadosParlamentares, new Comparator() {
+//                public int compare(Object o1, Object o2) {
+//                    Parlamentar c1 = (Parlamentar) o1;
+//                    Parlamentar c2 = (Parlamentar) o2;
+//                    return c1.getNome().compareToIgnoreCase(c2.getNome());
+//                }
+//            });
+
+                } catch (Exception e) {}
             }
         }).start();
-
-        //start a new thread to process job
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                getDadosParlamentares("http://meucongressonacional.com/api/001/deputado", 1);
-            }
-        }).start();
-
-        //----------------------
 
         spinnerParlamentaresArray.add("Selecione um parlamentar");
         ArrayAdapter<String> adapterParlamentar = new ArrayAdapter<String>(
@@ -145,16 +166,20 @@ public class MainActivity extends AppCompatActivity
                                     String[] descricaoDespesa = new String[despesaList.size()];
                                     String[] valorDespesa = new String[despesaList.size()];
                                     int[] posicaoImagemParlamentar = new int[despesaList.size()];
+                                    valTotalDespesas = new BigDecimal(String.valueOf(BigDecimal.ZERO));
                                     for (int i=0;i<despesaList.size();i++){
                                         descricaoDespesa[i] = despesaList.get(i).getDescricaoDespesa();
+
+                                        //SOMA DESPESAS
+                                        valTotalDespesas = valTotalDespesas.add(despesaList.get(i).getValor());
+
                                         valorDespesa [i] = "Valor: R$" + String.valueOf(despesaList.get(i).getValor());
                                         posicaoImagemParlamentar[i] = 0;
                                     }
+
                                     configuracaoListView(descricaoDespesa, valorDespesa, posicaoImagemParlamentar);
                                 }
                             });
-
-
                         }
                     }).start();
                 }
@@ -166,6 +191,9 @@ public class MainActivity extends AppCompatActivity
             }
 
         });
+
+        //CLIQUE NO FAB NO CANTO DA TELA
+        fabActionListener();
 
         String[] descricaoDespesa = new String[despesaList.size()];
         String[] valorDespesa = new String[despesaList.size()];
@@ -179,6 +207,27 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    public void fabActionListener(){
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(despesaList.size() == 0){
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Selecione um parlamentar", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } else {
+                    NumberFormat usdCostFormat = NumberFormat.getCurrencyInstance(new Locale ("pt", "BR"));
+                    usdCostFormat.setMinimumFractionDigits( 1 );
+                    usdCostFormat.setMaximumFractionDigits( 2 );
+                    Snackbar.make(view, "Valor total: " + String.valueOf(usdCostFormat.format(valTotalDespesas.doubleValue())), Snackbar.LENGTH_LONG)
+                            .setAction("Total de despesas do Parlamentar", null).show();
+                }
+            }
+        });
     }
 
     public void configuracaoListView(String[] abc, String[] valor, int[] def){
@@ -197,15 +246,6 @@ public class MainActivity extends AppCompatActivity
             redirectToDetailBand();
             }
         });
-
-        List<Despesa> listaDespesas = null;
-        try {
-            listaDespesas = new WebServiceConsumer().execute().get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
         list.setEmptyView(findViewById(R.id.emptyElement));
     }
 

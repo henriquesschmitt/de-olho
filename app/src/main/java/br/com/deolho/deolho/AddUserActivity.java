@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,16 +12,15 @@ import android.widget.Toast;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
-import br.com.deolho.ws.UsuarioInsertWS;
-import br.com.deolho.ws.UsuarioVerifyWS;
+import br.com.deolho.ws.UserInsertWS;
 
 public class AddUserActivity extends AppCompatActivity {
 
     private ProgressDialog pd;
     EditText email;
     EditText senha;
+    Button btnSaveUserRegister;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +34,18 @@ public class AddUserActivity extends AppCompatActivity {
 //        email.setText("henriquesschmitt@gmail.com");
 //        senha.setText("1212asa");
 
-        Button btnSaveUserRegister = (Button) findViewById(R.id.email_register_button);
+        btnSaveUserRegister = (Button) findViewById(R.id.email_register_button);
         btnSaveUserRegister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                inserirUsuario(email.getText().toString(), senha.getText().toString());
+                if( (!email.getText().toString().equals("") && email.getText() != null) && (!senha.getText().toString().equals("") && senha.getText() != null) )
+                    inserirUsuario(email.getText().toString(), senha.getText().toString());
+                else
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Informe o campo email e senha", Toast.LENGTH_LONG).show();
+                        }
+                    });
             }
         });
 
@@ -46,37 +53,38 @@ public class AddUserActivity extends AppCompatActivity {
 
     public void inserirUsuario(final String usuario, final String senha){
 
-        pd = ProgressDialog.show(this, "Aguarde",
-                "Registrando usuário...", true);
+        final UserInsertWS userInsertWS = new UserInsertWS();
 
+        pd = ProgressDialog.show(AddUserActivity.this, "Aguarde", "Inserindo usuário...");
         new Thread(new Runnable() {
             @Override
             public void run() {
-                UsuarioInsertWS usuarioInsertWS = new UsuarioInsertWS();
-                try {
-                    Boolean a = usuarioInsertWS.execute(usuario, senha).get();
-                    if(a) {
-                        redirectToLoginRegisterView();
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Usuário inserido com sucesso!", Toast.LENGTH_LONG).show();
-                            }
-                        });
-                    }
-                    else {
-                        pd.dismiss();
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Erro ao registrar usuário", Toast.LENGTH_LONG).show();
-                            }
-                        });
 
+                /** FAZ A REQUISIÇÃO DOS DADOS DO PARLAMENTAR SELECIONADO **/
+                final boolean b = userInsertWS.inserirUsuario(usuario, senha);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(b) {
+                            redirectToLoginRegisterView();
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Usuário inserido com sucesso!", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                        else {
+                            pd.dismiss();
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Erro ao registrar usuário", Toast.LENGTH_LONG).show();
+                                }
+                            });
+
+                        }
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
+                });
             }
         }).start();
     }
