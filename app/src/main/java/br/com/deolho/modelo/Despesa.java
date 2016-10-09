@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public class Despesa {
     
-    private int idDespesa;	
+    private Long idDespesa;
     private String ano;
     private String mes;
     private String tipoParlamentar;
@@ -17,8 +17,9 @@ public class Despesa {
     private String descricaoDespesa;
     private BigDecimal valor;
 
-    public Despesa(String ano, String mes, String tipoParlamentar, String nome, String tipoDespesa, String cpfCnpj, 
+    public Despesa(Long idDespesa, String ano, String mes, String tipoParlamentar, String nome, String tipoDespesa, String cpfCnpj,
     		String fornecedor, String documento, String data, String descricaoDespesa, BigDecimal valor) {
+        this.setIdDespesa(idDespesa);
         this.ano = ano;
         this.mes = mes;
         this.tipoParlamentar = tipoParlamentar;
@@ -188,11 +189,11 @@ public class Despesa {
         this.valor = valor;
     }
 
-	private int getIdDespesa() {
+    public Long getIdDespesa() {
 		return idDespesa;
 	}
 
-	private void setIdDespesa(int idDespesa) {
+    public void setIdDespesa(Long idDespesa) {
 		this.idDespesa = idDespesa;
 	}
     

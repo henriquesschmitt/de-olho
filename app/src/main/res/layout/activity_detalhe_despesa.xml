@@ -110,15 +110,32 @@
                 android:layout_marginTop="10dp"
                 android:id="@+id/txtValor"/>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceListItem"
+                android:text="Avalie a despesa"
+                android:layout_marginTop="10dp"
+                android:layout_gravity="center_horizontal"/>
+
+            <RatingBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/ratingBar"
+                android:layout_marginTop="10dp"
+                android:layout_gravity="center_horizontal"/>
+
+
             <Button
                 style="?android:textAppearanceSmall"
-                android:id="@+id/buttonRegister"
+                android:id="@+id/buttonAvaliation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:textStyle="bold"
                 android:layout_gravity="center_horizontal"
-                android:text="Não sou registrado" />
+                android:text="Enviar avaliação" />
+
 
         </LinearLayout>
     </ScrollView>

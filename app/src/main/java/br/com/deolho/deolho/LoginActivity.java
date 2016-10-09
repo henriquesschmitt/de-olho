@@ -24,17 +24,25 @@ import android.widget.Toast;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeoutException;
 
 public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
 
@@ -55,6 +63,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     Button mEmailSignInButton;
     Button mButtonAccountRegister;
 
+    /** DADOS QUE PODEM SER UTILIZADOS DURANTE TODA A VIDA ÚTIL DO APLICATIVO **/
+    public static String EMAIL_LOGADO = "";
+    public static Long ID_USUARIO_LOGADO = new Long(0);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,10 +78,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mEmailView = (EditText) findViewById(R.id.email);
         mPasswordView = (EditText) findViewById(R.id.password);
 
-        //teste
-        mEmailView.setText("henriquesschmitt@gmail.com");
-        mPasswordView.setText("123");
-
+        //TESTE - COMENTAR EM PRODUÇÃO
+//        mEmailView.setText("henriquesschmitt@gmail.com");
+//        mPasswordView.setText("123");
 
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -96,15 +107,21 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 @Override
                 public void run() {
 
-                    HttpClient httpClient = new DefaultHttpClient();
-                    HttpGet httpGet = new HttpGet("http://"+ MainActivity.IP_SERVIDOR+"/DespesasParlamentaresWS/resources/usuario/verify?email=" + email +
+                    HttpGet httpGet = new HttpGet("http://" + MainActivity.IP_SERVIDOR + "/DespesasParlamentaresWS/resources/usuario/verify?email=" + email +
                             "&senha=" + senha);
                     try {
+                        HttpParams httpParameters = new BasicHttpParams();
+                        HttpClient httpClient = new DefaultHttpClient(httpParameters);
+
+                        int timeoutConnection = 3000;
+                        HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
+
                         HttpResponse response = httpClient.execute(httpGet);
                         StatusLine statusLine = response.getStatusLine();
                         int statusCode = statusLine.getStatusCode();
                         String line = null;
                         StringBuilder stringBuilder1 = new StringBuilder();
+
 
                         if (statusCode == 200) {
                             HttpEntity entity = response.getEntity();
@@ -116,8 +133,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                                 stringBuilder1.append(line);
                             }
 
-                            System.out.println("henrique - " + stringBuilder1.toString().equals("[]"));
-                            if(stringBuilder1.toString().equals("[]")) {
+                            if (stringBuilder1.toString().equals("[]")) {
                                 pd.dismiss();
                                 runOnUiThread(new Runnable() {
                                     public void run() {
@@ -125,6 +141,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                                     }
                                 });
                             } else {
+
+                                JSONArray jsonArray = new JSONArray(stringBuilder1.toString());
+                                JSONObject jsonobject = jsonArray.getJSONObject(0);
+
+                                EMAIL_LOGADO = jsonobject.getString("email");
+                                ID_USUARIO_LOGADO = jsonobject.getLong("id");
+
                                 pd.dismiss();
                                 redirectToMainActivityView();
                             }
@@ -135,8 +158,17 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             Log.d("JSON", "Failed to download file");
                         }
 
+                    } catch (ClientProtocolException e) {
+                        System.out.println("OPA PRIMEIRO ERRO");
+                    } catch (IOException e) {
+                        pd.dismiss();
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Falha na comunicação com servidor =/", Toast.LENGTH_LONG).show();
+                            }
+                        });
                     } catch (Exception e) {
-                        System.out.println("erro = " + e.getMessage());
+                        System.out.println("falhou = " + e.getMessage());
                     }
                 }
             });

@@ -98,6 +98,7 @@ public class DespesasParlamentaresWS {
             for (int i = 0; i < jsonarray.length(); i++) {
                 JSONObject jsonobject = jsonarray.getJSONObject(i);
 
+                Long idDespesa =  jsonobject.has("idDespesa") ? jsonobject.getLong("idDespesa") : 0;
                 String ano = jsonobject.has("ano") ? jsonobject.getString("ano") : "2016";
                 String mes = jsonobject.has("mes") ? jsonobject.getString("mes") : "01";
                 String tipoParlamentar = jsonobject.has("tipoParlamentar") ? jsonobject.getString("tipoParlamentar") : "";
@@ -110,7 +111,7 @@ public class DespesasParlamentaresWS {
                 String descricaoDespesa = jsonobject.has("descricaoDespesa") ? jsonobject.getString("descricaoDespesa") : "Não informada";
                 BigDecimal valor = new BigDecimal(jsonobject.getString("valor"));
 
-                Despesa despesa = new Despesa(ano, mes, tipoParlamentar, nome, tipoDespesa, cpfCnpj,
+                Despesa despesa = new Despesa(idDespesa, ano, mes, tipoParlamentar, nome, tipoDespesa, cpfCnpj,
                         fornecedor, documento, data, descricaoDespesa, valor);
 
                 listaDespesas.add(despesa);
