@@ -96,7 +96,7 @@ public class AddUserActivity extends AppCompatActivity {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-//                finish();
+                finish();
                 Intent homepage = new Intent(AddUserActivity.this, LoginActivity.class);
                 startActivity(homepage);
             }
